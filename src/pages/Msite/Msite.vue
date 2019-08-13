@@ -136,8 +136,12 @@ export default {
     
   },
   computed:{
-    ...mapState(['address','categorys']),
-
+    // ...mapState(['address','categorys']),
+    ...mapState({
+      address: state=>state.msite.address,
+      categorys: state=>state.msite.categorys,
+     
+    }),
     categorysArr () {
       const bigArr = []
       let smallArr = []

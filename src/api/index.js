@@ -1,48 +1,96 @@
+
+/* 
+包含多个接口请求函数的模块
+函数的返回值是promsie对象
+*/
 import ajax from './ajax'
 
 const BASE = '/api'
-// 经纬获取位置
-export const reqAddress = (longitude,latitude) => ajax({
-  method: 'GET',
+const BASE2 = '/baidu'
+
+/* 
+1、 根据经纬度获取位置详情
+*/
+export const reqAddress = (longitude, latitude) => ajax({
+  method: 'GET', // 可以不写
   url: BASE + `/position/${latitude},${longitude}`
 })
-//食品列表
-export const reqCategorys = () => ajax.get(
-  BASE +'/index_category'
-)
 
-//商铺列表
-export const reqShops = ({longitude,latitude}) => ajax(
-  {url: BASE +'/shops',
+/* 
+2. 获取食品分类列表
+*/
+export const reqCategorys = () => ajax.get(BASE + '/index_category', {
+  headers: {
+    needToken: true
+  }
+})
+
+/* 
+3. 根据经纬度获取商铺列表
+*/
+export const reqShops = ({ latitude, longitude }) => ajax({
+  url: BASE + '/shops',
   params: {
     latitude,
     longitude
-  }}
-)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 模拟请求
-reqAddress('116.36867', '40.10038').then((result) => {
-  console.log('result', result)
+  },
+  headers: {
+    needToken: true
+  }
 })
+
+/* 
+4. 发送短信验证码
+*/
+export const reqSendCode = (phone) => ajax.get(BASE + '/sendcode', {
+  params: {
+    phone
+  }
+})
+
+/* 
+5. 用户名密码登陆
+*/
+export const reqPwdLogin = ({
+  name,
+  pwd,
+  captcha
+}) => ajax.post(BASE + '/login_pwd', {
+  name,
+  pwd,
+  captcha
+})
+
+/* 
+6. 手机号短信验证码登陆
+*/
+export const reqSmsLogin = (phone, code) => ajax.post(BASE + '/login_sms', {
+  phone,
+  code
+})
+
+/* 
+7. 自动登陆
+*/
+export const reqAutoLogin = () => ajax({
+  url: BASE + '/auto_login',
+  headers: {
+    needToken: true
+  }
+})
+
+
+/**
+ * 获取商家信息
+ */
+export const reqInfo = () => ajax('/info')
+
+/**
+ * 获取商家评价数组
+ */
+export const reqRatings = () => ajax('/ratings')
+
+/**
+ * 获取商家商品数组
+ */
+export const reqGoods = () => ajax('/goods')

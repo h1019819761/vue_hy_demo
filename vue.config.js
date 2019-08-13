@@ -1,4 +1,3 @@
-
 const path = require('path')
 // __dirname: 内置代表当前文件的文件夹的绝对路径
 
@@ -33,7 +32,7 @@ module.exports = {
          pathRewrite: { // 重写路径: 让代理服务在转发请求, 对路径进行特定修改
            '^/api': '', // 去掉路径中的/api
          },
-      }, 
+      },
       '/baidu': {
         target: 'http://www.baidu.com',
         changeOrigin: true,

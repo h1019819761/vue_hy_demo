@@ -59,20 +59,24 @@
         <h2 class="login_logo">硅谷外卖</h2>
         <div class="login_header_title">
           <a href="javascript:;" :class="{on:loginWay}" @click="loginWay=true">短信登录</a>
-          <a href="javascript:;" :class="{on:!loginWay}"  @click="loginWay=false">密码登录</a>
+          <a href="javascript:;" :class="{on:!loginWay}"  @click="loginWay=false">密码登录</a> 
         </div>
       </div>
       <div class="login_content">
         <form>
           <div :class="{on:loginWay}">
             <section class="login_message">
-              <input type="tel" maxlength="11" placeholder="手机号" v-model="phone">
-              <button :disabled="!isRightPhone || computeTime>0" class="get_verification" :class="{right_phone_number:isRightPhone}" @click.prevent="sendCode">
+              <input type="tel" name="phone" maxlength="11" placeholder="手机号"
+               v-model="phone" v-validate="'required|mobile'">
+              <button :disabled="!isRightPhone || computeTime>0" class="get_verification" 
+                :class="{right_phone_number:isRightPhone}" @click.prevent="sendCode">
                 {{computeTime>0?`获取验证码(${computeTime})s`:'获取验证码'}}    
               </button>
+              <span style="color:red" v-show="errors.has('phone')">{{errors.first('phone')}}</span>
             </section>
             <section class="login_verification">
-              <input type="tel" maxlength="8" placeholder="验证码">
+              <input type="tel" maxlength="8" placeholder="验证码" v-model="code" name="code" v-validate="{required: true, regex: /^\d{6}$/}">
+              <span style="color:red" v-show="errors.has('code')">{{errors.first('code')}}</span>
             </section>
             <section class="login_hint">
               温馨提示：未注册硅谷外卖帐号的手机号，登录时将自动注册，且代表已同意
@@ -82,22 +86,27 @@
           <div :class="{on:!loginWay}">
             <section>
               <section class="login_message">
-                <input type="tel" maxlength="11" placeholder="手机/邮箱/用户名">
+                <input type="tel" maxlength="11" placeholder="用户名" name="name" v-model="name">
+                <!-- <span style="color:red" v-show="errors.has('phone')">{{errors.first('phone')}}</span> -->
               </section>
               <section class="login_verification">
-                <input :type="isShowPwd?'text':'password'" maxlength="8" placeholder="密码">
-                <div class="switch_button" :class="isShowPwd?'on':'off'"  @click="isShowPwd=!isShowPwd">
+                <input :type="isShowPwd?'text':'password'" maxlength="8" placeholder="密码" name="密码" v-model="pwd" v-validate="'required'">
+                
+                <div class="switch_button" :class="isShowPwd?'on':'off'"  @click.prevent="isShowPwd=!isShowPwd">
                   <div class="switch_circle" :class="{right:isShowPwd}"></div>
                   <span class="switch_text">{{isShowPwd?'ABC':''}}</span>
                 </div>
+                <!-- <span style="color:red" >{{errors.first('密码')}}</span> -->
               </section>
               <section class="login_message">
-                <input type="text" maxlength="11" placeholder="验证码">
-                <img class="get_verification" src="./images/captcha.svg" alt="captcha">
+                <input type="text" maxlength="11" placeholder="验证码" name="验证码" v-validate="{required: true, regex: /^.{4}$/}" v-model="captcha">
+                <img class="get_verification" src="http://localhost:4000/captcha" alt="captcha"
+                @click="updateCaptcha" ref="captcha">
+                <span style="color:red">{{errors.first('验证码')}}</span>
               </section>
             </section>
           </div>
-          <button class="login_submit">登录</button>
+          <button class="login_submit" @click.prevent="login" v-on:keyup.enter="login">登录</button>
         </form>
         <a href="javascript:;" class="about_us">关于我们</a>
       </div>
@@ -110,6 +119,10 @@
 
 <script type="text/ecmascript-6">
 import { setInterval, clearInterval } from 'timers';
+import { Toast,MessageBox } from 'mint-ui';
+import {reqSendCode,reqPwdLogin,reqSmsLogin} from '../../api/index'
+import {mapState} from 'vuex'
+
 // import {reqAddress,reqShopss} from '../../api'
 // reqAddress(40.10038,116.36867)
 // reqShopss('name','bane','jadw')
@@ -117,31 +130,107 @@ import { setInterval, clearInterval } from 'timers';
   export default {
     data () {
       return {
-        loginWay: true,
-        phone: '',
+        loginWay: false,//true: 短信登陆, false: 密码登陆
+        phone: '', // 手机号
+        code: '', // 短信验证码
+        name: '', // 用户名
+        pwd: '', // 密码
+        captcha: '', // 图形验证码
         computeTime:0,
         isShowPwd: false
       }
     },
     mounted(){
       console.log(this.$router)
-
+      
     },
     computed:{
       isRightPhone () {
         return /^1\d{10}$/.test(this.phone)
-      }
+      },
+      
     },
     methods:{
-      sendCode () {
+      async sendCode () {
        this.computeTime = 10
        const timeId = setInterval(()=>{
-         this.computeTime--
          if(this.computeTime===0){
            clearInterval(timeId)
+         }else{
+            this.computeTime--
          }
+        
        },1000)
+       const result = await reqSendCode(this.phone)
+      //  const result = await reqSendCode(this.phone)//获取验证码短信
+       console.log(this.phone,result)
+        // if (result.code===0) {
+        //   // alert('短信已发送')
+        //   Toast('短信已发送')
+        // } else {
+        //   // 停止计时
+        //   this.computeTime = 0
+        //   // alert(result.msg)
+        //   MessageBox.alert(result.msg)
+        // }
+
+       if(result.code===0){
+         Toast('短信已发送！')
+        // alert('短信已发送！')
+       }else{
+         this.computeTime=0
+         Toast(result. msg)
+         MessageBox.alert(result.msg);
+       }
+      },
+      async login () {
+        let names 
+        let result
+        const {loginWay,phone,code,name,pwd,captcha} = this
+        if(loginWay){
+          names = ['phone','code']
+          result = await reqSmsLogin(phone,code)
+          this.computeTime = 0
+        }else{
+          names = ['用户名','密码','验证码']
+          result = await reqPwdLogin({name,pwd,captcha})
+          if(result.code===1){
+            this.updateCaptcha()
+            this.captcha = ''
+          } 
+        }
+        // ==================================================
+        if(result.code===0){
+          
+          const user = result.data
+          if(user){
+            this.$store.dispatch('saveUser',user)
+            this.$router.replace('/profile')
+          }
+         
+        }else{
+          MessageBox.alert(result.msg)
+        }
+
+        const success = await this.$validator.validateAll(names)
+        if(success){
+          alert('表单验证通过, 发送登陆请求')
+        }
+      },
+      async updateCaptcha () {//更新验证码图
+        this.$refs.captcha.src = 'http://localhost:4000/captcha?time='+Date.now()
       }
+    },
+    beforeRouteEnter(to,from,next){//组件对象被创建前
+
+      next((component)=>{
+        if(component.$store.state.user.user._id){
+          next('/profile')
+        }else{
+          next()
+        }
+      })
+      
     }
   }
 </script>

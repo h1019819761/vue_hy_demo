@@ -7,7 +7,7 @@
     </div>
     <div class="shop_container">
       <ul class="shop_list" v-if="shops.length>0">
-        <li class="shop_li border-1px" v-for="(shop) in shops" :key="shop.id">
+        <li class="shop_li border-1px" v-for="(shop) in shops" :key="shop.id" @click.prevent="$router.push('/shop')">
           <a>
             <div class="shop_left">
               <img class="shop_img" :src="'https://fuss10.elemecdn.com'+shop.image_path" />
@@ -65,7 +65,10 @@
   import {mapState} from 'vuex'
   export default {
     computed: {
-      ...mapState(['shops'])
+      //...mapState(['shops'])
+      ...mapState({
+        shops: state=>state.msite.shops
+      })
     }
   }
 </script>
